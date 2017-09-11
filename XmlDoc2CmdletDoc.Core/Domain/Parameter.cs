@@ -46,12 +46,31 @@ namespace XmlDoc2CmdletDoc.Core.Domain
                 switch (MemberInfo.MemberType)
                 {
                     case MemberTypes.Property:
-                        var type = ((PropertyInfo)MemberInfo).PropertyType;
-                        var elementType = type.IsArray ? type.GetElementType() : null;
-                        var innerType = Nullable.GetUnderlyingType(elementType ?? type);
-                        return innerType ?? elementType ?? type;
+                        return ((PropertyInfo)MemberInfo).PropertyType;
                     case MemberTypes.Field:
                         return ((FieldInfo)MemberInfo).FieldType;
+                    default:
+                        throw new NotSupportedException("Unsupported type: " + MemberInfo);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The element type of the parameter
+        /// </summary>
+        /// <remarks>Will return null if the parameter type is not an array</remarks>
+        public Type ParameterElementType
+        {
+            get
+            {
+                switch (MemberInfo.MemberType)
+                {
+                    case MemberTypes.Property:
+                        var propertyType = ((PropertyInfo)MemberInfo).PropertyType;
+                        return propertyType.GetElementType();
+                    case MemberTypes.Field:
+                        var fieldType = ((FieldInfo)MemberInfo).FieldType;
+                        return fieldType.GetElementType();
                     default:
                         throw new NotSupportedException("Unsupported type: " + MemberInfo);
                 }
@@ -160,6 +179,12 @@ namespace XmlDoc2CmdletDoc.Core.Domain
                 if (MemberInfo.MemberType == MemberTypes.Property)
                 {
                     var type = ParameterType;
+
+                    if (type.IsArray)
+                    {
+                        type = ParameterElementType;
+                    }
+
                     if (type.IsEnum)
                     {
                         return type
